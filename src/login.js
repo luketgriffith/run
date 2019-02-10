@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { Platform, StyleSheet, Text, View, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import firebase from 'react-native-firebase';
 
@@ -11,7 +11,8 @@ export default class Login extends Component {
 
   state = {
     email: '',
-    pw: ''
+    pw: '',
+    loading: false
   }
 
   componentDidAppear() {
@@ -29,6 +30,7 @@ export default class Login extends Component {
   }
 
   authed = () => {
+    console.log('is this going twice?')
     Navigation.push(this.props.componentId, {
       component: {
         name: 'home',
@@ -46,6 +48,7 @@ export default class Login extends Component {
   }
 
   submit = async () => {
+    this.setState({ loading: true })
     console.log('whee..')
     let { email, pw } = this.state;
     // let actionCodeSettings = {
@@ -90,6 +93,13 @@ export default class Login extends Component {
   }
 
   render() {
+    let { loading } = this.state;
+    if (loading) return (
+      <View style={styles.container}>
+        <ActivityIndicator />
+      </View>
+    )
+
     return (
       <View style={styles.container}>
         {

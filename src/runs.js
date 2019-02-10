@@ -1,11 +1,37 @@
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { Navigation } from 'react-native-navigation';
 
-export default class Runs extends Component {
+export default class Home extends Component {
+  constructor(props) {
+    super(props);
+    Navigation.events().bindComponent(this);
+  }
+
+  state = {
+  }
+
+
+  start = () => {
+    Alert.alert('starting run...')
+  }
+
+  goToRuns = () => {
+    Navigation.push(this.props.componentId, {
+      component: {
+        name: 'runs',
+        options: {}
+      }
+    });
+  }
+
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>My Runs</Text>
+        <Text>Run History</Text>
+        <TouchableOpacity onPress={() => Navigation.pop(this.props.componentId)}>
+          <Text style={styles.welcome}>Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }

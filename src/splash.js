@@ -9,6 +9,10 @@ class Splash extends Component {
     Navigation.events().bindComponent(this);
   }
 
+  state = {
+    authed: false
+  }
+
   componentDidAppear() {
     this.listener = firebase.auth().onIdTokenChanged((user) => {
       if (user) {
@@ -23,16 +27,20 @@ class Splash extends Component {
 
   componentDidDisappear() {
     console.log('leaving splash...')
-    this.listener();
+    // this.listener();
   }
 
   authed = () => {
-    Navigation.push(this.props.componentId, {
-      component: {
-        name: 'home',
-        options: {}
-      }
-    });
+    if (this.state.authed) return
+    // prevents the nav command from being fired twice
+    this.setState({ authed: true }, () => {
+      Navigation.push(this.props.componentId, {
+        component: {
+          name: 'home',
+          options: {}
+        }
+      });
+    })
   }
 
   notAuthed = () => {
