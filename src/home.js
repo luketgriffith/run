@@ -9,18 +9,25 @@ export default class Home extends Component {
   constructor(props) {
     super(props);
     Navigation.events().bindComponent(this);
-    this.ref = firebase.firestore().collection('runs');
+    this.ref = null
     this.unsubscribe = null;
   }
 
   state = {
     authed: true,
     running: false,
-    run: null
+    loading: true,
+    run: null,
+    intervalId: null,
+    timer: ''
   }
 
   componentDidAppear() {
     this.loadActiveRun();
+  }
+
+  componentDidDisappear() {
+    clearInterval(this.state.intervalId);
   }
 
   getLocations = (appointment) => {
@@ -44,62 +51,100 @@ export default class Home extends Component {
     let uid = firebase.auth().currentUser.uid;
     let runs = [];
     let fromDb = await firebase.firestore().collection('runs').where('uid', '==', uid).where('active', '==', true).get()
-    fromDb.forEach((doc) => runs.push(doc.data()))
+    console.log('FROM DB>>>>>>>', fromDb)
+    fromDb.forEach((doc) => {
+      console.log('boooooof', doc.id)
+      runs.push({ id: doc.id, ...doc.data() })
+    })
+
     if (runs[0]) {
+      console.log('got a run????????')
       this.setState({
-        run: runs[0]
-      })
+        run: runs[0],
+        loading: false
+      }, () => this.timer())
     } else {
       this.setState({
-        run: null
+        run: null,
+        loading: false
       })
     }
   }
 
-  stop = () => {
-    this.setState({ running: false })
-
-    let uid = firebase.auth().currentUser.uid;
-    firebase.firestore().collection('runs')
-      .where('uid', '==', uid)
-      .where('active', '==', true)
-      .get()
-      .then((querySnapshot) => {
-        querySnapshot.forEach(async (doc) => {
-            let ourRun = doc.data();
-            console.log("AAAASDFASD", ourRun)
-            this.setState({ run: ourRun })
-            let time = new Date()
-            let locations = await this.getLocations();
-            let ourLocations = locaions.filter(l => moment(l.time).isAfter(moment(ourRun.start_time)))
-            doc.ref.update({
-              end_time: time,
-              active: false,
-              duration: Math.abs(moment(ourRun.start_time).diff(moment(time), 'minutes')),
-              points: ourLocations
-            }).then((b) => {
-              console.log('hooray')
-            }).catch(e => {
-              console.log('awful bad error here', e)
-            })
-        })
-      })
+  goToSingleRun = () => {
+    Navigation.push(this.props.componentId, {
+      component: {
+        name: 'singleRun',
+        passProps: {
+          run: this.state.run
+        },
+        options: {}
+      }
+    });
   }
 
 
-  start = () => {
-    this.configureTracking()
-    this.setState({
-      running: true
-    });
+  stop = async () => {
+    this.setState({ running: false, loading: true })
+    let time = new Date()
+    let locations = await this.getLocations();
+    let ourLocations = locations.filter(l => moment(l.time).isAfter(moment(ourRun.start_time)))
+
+    let ourDoc = {
+      end_time: time,
+      active: false,
+      duration: Math.abs(moment(this.state.run.start_time).diff(moment(time), 'minutes')),
+      points: ourLocations
+    }
+
+    await firebase.firestore().collection('runs').doc(this.state.run.id).update(ourDoc);
+    this.goToSingleRun()
+  }
+
+
+  start = async () => {
+    this.configureTracking();
 
     let uid = firebase.auth().currentUser.uid;
-    this.ref.add({
+    let ourRun = {
       uid: uid,
       start_time: new Date(),
       active: true,
       points: []
-    });
+    };
+
+    let id = await firebase.firestore().collection('runs').add(ourRun);
+    ourRun.id = id;
+    this.setState({
+      running: true,
+      run: ourRun
+    }, () => this.timer());
+
+  }
+
+  timer = () => {
+    let intervalId = setInterval(() => {
+      this.tick();
+    }, 1000);
+
+    this.setState({
+      intervalId
+    })
+  }
+
+  tick = () => {
+    if (!this.state.run) return;
+
+    let start = moment(this.state.run.start_time)
+    let now = moment()
+    let duration = moment.duration(now.diff(start));
+    let hours = duration.hours();
+    let minutes = duration.minutes();
+    let seconds = duration.seconds();
+
+    let time = `${minutes}:${seconds}`
+
+    this.setState({ timer: time })
   }
 
   goToRuns = () => {
@@ -147,12 +192,6 @@ export default class Home extends Component {
       }
     });
 
-    // BackgroundGeolocation.on('location', (location) => {
-    //   // handle your locations here
-    //   // to perform long running operation on iOS
-    //   // you need to create background task
-    // });
-
   }
 
   stopTracking = () => {
@@ -189,9 +228,13 @@ export default class Home extends Component {
         }
         {
           this.state.run  ?
-          <TouchableOpacity onPress={() => this.stop()}>
-            <Text style={styles.welcome}>End Run</Text>
-          </TouchableOpacity> : null
+          <View>
+            <Text>Timer: {this.state.timer}</Text>
+            <TouchableOpacity onPress={() => this.stop()}>
+              <Text style={styles.welcome}>End Run</Text>
+            </TouchableOpacity>
+          </View>
+           : null
         }
         <TouchableOpacity onPress={() => this.goToRuns()}>
           <Text style={styles.welcome}>View Run History</Text>
