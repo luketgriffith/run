@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import BackgroundGeolocation from 'react-native-mauron85-background-geolocation';
 import firebase from 'react-native-firebase';
@@ -15,19 +15,49 @@ export default class Home extends Component {
 
   state = {
     authed: true,
-    running: false
+    running: false,
+    run: null
+  }
+
+  componentDidAppear() {
+    this.loadActiveRun();
+  }
+
+  getLocations = (appointment) => {
+    return new Promise((res, no) => {
+      BackgroundGeolocation.getValidLocations(function(locations, error) {
+        if (error) {
+          console.log('BAD ONE HERE BOB', error)
+        }
+        if (!locations || error) {
+          res([])
+        }
+        let ours = locations.map(l => {
+          return  { lat: l.longitude, lng: l.latitude, time: l.time }
+        })
+        res(ours)
+      })
+    })
+  }
+
+  loadActiveRun = async () => {
+    let uid = firebase.auth().currentUser.uid;
+    let runs = [];
+    let fromDb = await firebase.firestore().collection('runs').where('uid', '==', uid).where('active', '==', true).get()
+    fromDb.forEach((doc) => runs.push(doc.data()))
+    if (runs[0]) {
+      this.setState({
+        run: runs[0]
+      })
+    } else {
+      this.setState({
+        run: null
+      })
+    }
   }
 
   stop = () => {
     this.setState({ running: false })
-    let points = {
-    }
-    for (let i = 0; i < 200; i++) {
-      points[i] = {
-        lat: 4,
-        lng: 55
-      }
-    }
 
     let uid = firebase.auth().currentUser.uid;
     firebase.firestore().collection('runs')
@@ -35,14 +65,18 @@ export default class Home extends Component {
       .where('active', '==', true)
       .get()
       .then((querySnapshot) => {
-        querySnapshot.forEach((doc) => {
+        querySnapshot.forEach(async (doc) => {
             let ourRun = doc.data();
             console.log("AAAASDFASD", ourRun)
             this.setState({ run: ourRun })
             let time = new Date()
+            let locations = await this.getLocations();
+            let ourLocations = locaions.filter(l => moment(l.time).isAfter(moment(ourRun.start_time)))
             doc.ref.update({
               end_time: time,
-              duration: Math.abs(moment(ourRun.start_time).diff(moment(time), 'minutes'))
+              active: false,
+              duration: Math.abs(moment(ourRun.start_time).diff(moment(time), 'minutes')),
+              points: ourLocations
             }).then((b) => {
               console.log('hooray')
             }).catch(e => {
@@ -140,14 +174,25 @@ export default class Home extends Component {
   }
 
   render() {
+    if (this.state.loading) return (
+      <View style={styles.container}>
+        <ActivityIndicator/>
+      </View>
+    )
     return (
       <View style={styles.container}>
-        <TouchableOpacity onPress={() => this.start()}>
-          <Text style={styles.welcome}>Start Run</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => this.stop()}>
-          <Text style={styles.welcome}>Stop</Text>
-        </TouchableOpacity>
+        {
+          this.state.run  ? null :
+          <TouchableOpacity onPress={() => this.start()}>
+            <Text style={styles.welcome}>Start Run</Text>
+          </TouchableOpacity>
+        }
+        {
+          this.state.run  ?
+          <TouchableOpacity onPress={() => this.stop()}>
+            <Text style={styles.welcome}>End Run</Text>
+          </TouchableOpacity> : null
+        }
         <TouchableOpacity onPress={() => this.goToRuns()}>
           <Text style={styles.welcome}>View Run History</Text>
         </TouchableOpacity>

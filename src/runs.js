@@ -1,8 +1,8 @@
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Navigation } from 'react-native-navigation';
 import firebase from 'react-native-firebase';
-
+import moment from 'moment';
 export default class Home extends Component {
   constructor(props) {
     super(props);
@@ -12,13 +12,11 @@ export default class Home extends Component {
   }
 
   state = {
-    runs: []
+    runs: [],
+    loading: true
   }
 
 
-  start = () => {
-    Alert.alert('starting run...')
-  }
 
   goToRuns = () => {
     Navigation.push(this.props.componentId, {
@@ -36,22 +34,29 @@ export default class Home extends Component {
     let fromDb = await firebase.firestore().collection('runs').where('uid', '==', uid).get()
     fromDb.forEach((doc) => runs.push(doc.data()))
     console.log('boi::::', runs)
-    this.setState({ runs });
+    this.setState({ runs, loading: false });
   }
 
   render() {
+
     return (
       <View style={styles.container}>
         <Text>Run History</Text>
+        <View>
+        {
+          this.state.loading ? <ActivityIndicator/> :
+          this.state.runs.map((r, i) => {
+            return (
+              <View style={styles.listItem} key={i}>
+                <Text style={styles.listText}>{moment(r.start_time).format('DD/MM')}</Text>
+                <Text style={styles.listText}>{r.duration} min.</Text>
+              </View>
+            )
+          })
+        }
+        </View>
         <TouchableOpacity onPress={() => Navigation.pop(this.props.componentId)}>
           <Text style={styles.welcome}>Back</Text>
-          {
-            this.state.runs.map(r => {
-              return (
-                <Text>{r.duration}</Text>
-              )
-            })
-          }
         </TouchableOpacity>
       </View>
     );
@@ -59,6 +64,15 @@ export default class Home extends Component {
 }
 
 const styles = StyleSheet.create({
+  listItem: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    padding: 10
+  },
+  listText: {
+    padding: 5
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
