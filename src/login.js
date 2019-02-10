@@ -18,7 +18,7 @@ export default class Login extends Component {
   componentDidAppear() {
     this.listener = firebase.auth().onAuthStateChanged((user) => {
       if (user) {
-        console.log('got us a user here.....')
+        this.writeUserData(user.uid)
         this.authed()
       }
     })
@@ -47,6 +47,15 @@ export default class Login extends Component {
     this.setState({ pw })
   }
 
+  writeUserData = async (uid) => {
+    await firebase.database().ref('users/' + uid).set({
+       email: this.state.email
+    }).catch(e => {
+      console.log('huuuuuge error..', e)
+      Alert.alert('Error: ' + e)
+    })
+  }
+
   submit = async () => {
     this.setState({ loading: true })
     console.log('whee..')
@@ -61,9 +70,12 @@ export default class Login extends Component {
     await firebase.auth().signInWithEmailAndPassword(email, pw).catch(async e => {
       console.log('eeeee', e.code)
       if (e && e.code === 'auth/user-not-found') {
-        await firebase.auth().createUserWithEmailAndPassword(email, pw).catch(e => {
+        let user = await firebase.auth().createUserWithEmailAndPassword(email, pw).catch(e => {
+
           console.log('bork bork...', e)
+          Alert.alert('Error: ' + e.message)
         })
+
       } else {
         Alert.alert('Error: ' + e.message)
       }
