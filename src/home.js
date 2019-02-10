@@ -3,6 +3,7 @@ import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-
 import { Navigation } from 'react-native-navigation';
 import BackgroundGeolocation from 'react-native-mauron85-background-geolocation';
 import firebase from 'react-native-firebase';
+import moment from 'moment';
 
 export default class Home extends Component {
   constructor(props) {
@@ -34,10 +35,19 @@ export default class Home extends Component {
       .where('active', '==', true)
       .get()
       .then((querySnapshot) => {
-        querySnapshot.forEach(function(doc) {
-            // doc.data() is never undefined for query doc snapshots
-            console.log(doc.id, " => ", doc.data());
-            Alert.alert(doc.id)
+        querySnapshot.forEach((doc) => {
+            let ourRun = doc.data();
+            console.log("AAAASDFASD", ourRun)
+            this.setState({ run: ourRun })
+            let time = new Date()
+            doc.ref.update({
+              end_time: time,
+              duration: Math.abs(moment(ourRun.start_time).diff(moment(time), 'minutes'))
+            }).then((b) => {
+              console.log('hooray')
+            }).catch(e => {
+              console.log('awful bad error here', e)
+            })
         })
       })
   }
