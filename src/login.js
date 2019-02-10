@@ -18,7 +18,7 @@ export default class Login extends Component {
   componentDidAppear() {
     this.listener = firebase.auth().onAuthStateChanged((user) => {
       if (user) {
-        this.writeUserData(user.uid)
+        // this.writeUserData(user.uid)
         this.authed()
       }
     })

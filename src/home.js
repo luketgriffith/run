@@ -8,6 +8,8 @@ export default class Home extends Component {
   constructor(props) {
     super(props);
     Navigation.events().bindComponent(this);
+    this.ref = firebase.firestore().collection('runs');
+    this.unsubscribe = null;
   }
 
   state = {
@@ -27,14 +29,17 @@ export default class Home extends Component {
     }
 
     let uid = firebase.auth().currentUser.uid;
-    let ref = firebase.database().ref().child(`/users/${uid}/runs`);
-    ref.orderByChild('active').equalTo(true).once('value', function(snapshot) {
-      // console.log('AASDFASDFASDF', snapshot.key)
-      snapshot.forEach(snap => {
-        console.log('key..', snap.key)
-        console.log('val...', snap.val())
+    firebase.firestore().collection('runs')
+      .where('uid', '==', uid)
+      .where('active', '==', true)
+      .get()
+      .then((querySnapshot) => {
+        querySnapshot.forEach(function(doc) {
+            // doc.data() is never undefined for query doc snapshots
+            console.log(doc.id, " => ", doc.data());
+            Alert.alert(doc.id)
+        })
       })
-    })
   }
 
 
@@ -44,17 +49,13 @@ export default class Home extends Component {
       running: true
     });
 
-    let postData = {
-      startTime: new Date(),
-      active: true,
-      points: {}
-    }
-
     let uid = firebase.auth().currentUser.uid;
-    let newPostKey = firebase.database().ref().child(`/users/${uid}/runs`).push().key;
-    let newRun= {};
-    newRun[`/users/${uid}/runs/${newPostKey}`] = postData;
-    return firebase.database().ref().update(newRun);
+    this.ref.add({
+      uid: uid,
+      start_time: new Date(),
+      active: true,
+      points: []
+    });
   }
 
   goToRuns = () => {
