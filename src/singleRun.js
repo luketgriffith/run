@@ -3,6 +3,8 @@ import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndic
 import { Navigation } from 'react-native-navigation';
 import firebase from 'react-native-firebase';
 import moment from 'moment';
+import MapView from 'react-native-maps';
+
 export default class SingleRun extends Component {
   constructor(props) {
     super(props);
@@ -35,7 +37,18 @@ export default class SingleRun extends Component {
     return (
       <View style={styles.container}>
         <Text>Single Run</Text>
-
+        <View>
+        <MapView
+           style={styles.map}
+           region={{
+             latitude: 37.78825,
+             longitude: -122.4324,
+             latitudeDelta: 0.015,
+             longitudeDelta: 0.0121,
+           }}
+         >
+         </MapView>
+        </View>
 
         <TouchableOpacity onPress={() => Navigation.pop(this.props.componentId)}>
           <Text style={styles.welcome}>Back</Text>
@@ -46,6 +59,10 @@ export default class SingleRun extends Component {
 }
 
 const styles = StyleSheet.create({
+  map: {
+    height: 400,
+    width: 400
+  },
   listItem: {
     flexDirection: 'row',
     justifyContent: 'flex-start',

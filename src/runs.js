@@ -37,6 +37,18 @@ export default class Home extends Component {
     this.setState({ runs, loading: false });
   }
 
+  goToSingleRun = (run) => {
+    Navigation.push(this.props.componentId, {
+      component: {
+        name: 'singleRun',
+        passProps: {
+          run: run
+        },
+        options: {}
+      }
+    });
+  }
+
   render() {
 
     return (
@@ -47,10 +59,12 @@ export default class Home extends Component {
           this.state.loading ? <ActivityIndicator/> :
           this.state.runs.map((r, i) => {
             return (
+              <TouchableOpacity onPress={() => this.goToSingleRun(r)}>
               <View style={styles.listItem} key={i}>
                 <Text style={styles.listText}>{moment(r.start_time).format('DD/MM')}</Text>
                 <Text style={styles.listText}>{r.duration} min.</Text>
               </View>
+              </TouchableOpacity>
             )
           })
         }
