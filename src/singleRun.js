@@ -3,7 +3,7 @@ import {Platform, StyleSheet, Text, View, TouchableOpacity, Alert, ActivityIndic
 import { Navigation } from 'react-native-navigation';
 import firebase from 'react-native-firebase';
 import moment from 'moment';
-import MapView from 'react-native-maps';
+import MapView, { Polyline } from 'react-native-maps';
 
 export default class SingleRun extends Component {
   constructor(props) {
@@ -15,7 +15,8 @@ export default class SingleRun extends Component {
 
   state = {
     runs: [],
-    loading: true
+    loading: true,
+    points: []
   }
 
   goToRuns = () => {
@@ -32,22 +33,35 @@ export default class SingleRun extends Component {
     console.log('poprs....', this.props)
   }
 
-  render() {
+  getPoints = () => {
+    return this.props.run.points.map(p => ({ latitude: p.lat, longitude: p.lng }))
+  }
 
+  render() {
+    console.log('runnsdfasdf', this.props.run.points)
     return (
       <View style={styles.container}>
         <Text>Single Run</Text>
         <View>
-        <MapView
-           style={styles.map}
-           region={{
-             latitude: 37.78825,
-             longitude: -122.4324,
-             latitudeDelta: 0.015,
-             longitudeDelta: 0.0121,
-           }}
-         >
-         </MapView>
+          {
+            this.props.run && this.props.run.points && this.props.run.points.length ?
+            <MapView
+            region={{
+              latitude: this.props.run.points[0].lat,
+              longitude: this.props.run.points[0].lng
+            }}
+            minZoomLevel={5}
+            maxZoomLevel={20}
+            style={styles.map}>
+            <Polyline
+            coordinates={this.getPoints()}
+            strokeColor="#000" // fallback for when `strokeColors` is not supported by the map-provider
+
+            strokeWidth={6}
+            />
+            </MapView> : null
+
+          }
         </View>
 
         <TouchableOpacity onPress={() => Navigation.pop(this.props.componentId)}>

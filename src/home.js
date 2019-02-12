@@ -36,8 +36,16 @@ export default class Home extends Component {
         if (error) {
           console.log('BAD ONE HERE BOB', error)
         }
-        if (!locations || error) {
-          res([])
+        let temps = [
+          { lat: 37.8025259, lng: -122.4351431, time: moment().subtract(5, 'minutes').toDate() },
+          { lat: 37.7896386, lng: -122.421646, time: moment().subtract(5, 'minutes').toDate() },
+          { lat: 37.7665248, lng: -122.4161628, time: moment().subtract(5, 'minutes').toDate() },
+          { lat: 37.7734153, lng: -122.4577787, time: moment().subtract(5, 'minutes').toDate() },
+          { lat: 37.7948605, lng: -122.4596065, time: moment().subtract(5, 'minutes').toDate() },
+          { lat: 37.8025259, lng: -122.4351431, time: moment().subtract(5, 'minutes').toDate() }
+        ]
+        if (!locations || !locations.length || error) {
+          res(temps)
         }
         let ours = locations.map(l => {
           return  { lat: l.longitude, lng: l.latitude, time: l.time }
@@ -85,20 +93,30 @@ export default class Home extends Component {
 
 
   stop = async () => {
-    this.setState({ running: false, loading: true })
-    let time = new Date()
-    let locations = await this.getLocations();
-    let ourLocations = locations.filter(l => moment(l.time).isAfter(moment(ourRun.start_time)))
+    this.setState({
+      loading: true
+    }, async () => {
+      let time = new Date()
+      let locations = await this.getLocations();
+      let ourLocations = locations.filter(l => moment(l.time).isAfter(moment(this.state.run.start_time)))
+      this.setState({
+        run: {
+          ...this.state.run,
+          points: ourLocations
+        }
+      }, async () => {
 
-    let ourDoc = {
-      end_time: time,
-      active: false,
-      duration: Math.abs(moment(this.state.run.start_time).diff(moment(time), 'minutes')),
-      points: ourLocations
-    }
+        let ourDoc = {
+          end_time: time,
+          active: false,
+          duration: Math.abs(moment(this.state.run.start_time).diff(moment(time), 'minutes')),
+          points: ourLocations
+        }
 
-    await firebase.firestore().collection('runs').doc(this.state.run.id).update(ourDoc);
-    this.goToSingleRun()
+        await firebase.firestore().collection('runs').doc(this.state.run.id).update(ourDoc);
+        this.goToSingleRun()
+      })
+    })
   }
 
 

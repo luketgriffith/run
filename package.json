@@ -7,13 +7,16 @@
     "test": "jest"
   },
   "dependencies": {
+    "aws-sdk": "^2.401.0",
+    "axios": "^0.18.0",
     "moment": "^2.24.0",
     "react": "16.6.3",
     "react-native": "0.58.4",
     "react-native-firebase": "^5.2.2",
     "react-native-maps": "^0.23.0",
     "react-native-mauron85-background-geolocation": "^0.5.0",
-    "react-native-navigation": "^2.10.0"
+    "react-native-navigation": "^2.10.0",
+    "xmldom": "^0.1.27"
   },
   "devDependencies": {
     "babel-core": "^7.0.0-bridge.0",
